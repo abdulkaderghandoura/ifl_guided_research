@@ -72,7 +72,7 @@ if __name__ == "__main__":
     )
 
     args = arg_parser.parse_args()
-    args.test_sampling = False
+    # args.test_sampling = False
     with open(args.split_filename, "r") as f:
         split = json.load(f)
 
