@@ -1,3 +1,8 @@
+########################## Modifications ###########################
+# We fixed an undefined behavior in the file names of processed    #
+# data, which caused shuffling of the sequence phases.             #
+####################################################################
+
 import numpy as np
 from mesh_to_sdf.mesh_to_sdf import get_surface_point_cloud, scale_to_unit_sphere, scale_to_unit_cube,\
     sample_sdf_near_surface, sample_inside_surface, ComputeNormalizationParameters, transformation
@@ -66,7 +71,7 @@ def transform_to_canonical(base_path, instance, output_path, test_sampling=False
     out_patient_dir = os.path.join(output_path, instance)
     if not os.path.isdir(out_patient_dir):
         os.makedirs(out_patient_dir)
-    obj_list = os.listdir(os.path.join(base_path, "points"))
+    obj_list = sorted(os.listdir(os.path.join(base_path, "points")))
     input_points_path = os.path.join(base_path, "points")
 
     # Get ED: phase = 00
@@ -85,7 +90,7 @@ def transform_to_canonical(base_path, instance, output_path, test_sampling=False
     for i in range(len(obj_list)):  # i is phase
         phase = os.path.splitext(obj_list[i])[0]
         print("        Phase: " + phase)
-        output_path = os.path.join(out_patient_dir, "%02d" % i + ".npz")
+        output_path = os.path.join(out_patient_dir, "%02d" % int(phase) + ".npz")
         # #### recover to origin space
         # v_3 = v_2 / scale - offset
         # homogeneous = np.column_stack((v_3, np.ones([v_3.shape[0], 1])))
