@@ -16,6 +16,7 @@ def get_instance_filenames(data_source, split):
 
 
 def get_cs(data_source, split):
+    # split looks like: {'LVV': {'train': ['000', '001', ...]}}
     cs = []
     for dataset in split:
         for class_name in split[dataset]:
