@@ -1,4 +1,5 @@
 import numpy as np
+import wandb
 import torch
 import torch.utils.data as data_utils
 import torch.nn
@@ -42,6 +43,9 @@ def main_function(experiment_directory, data_source, continue_from):
     logging.info("running " + experiment_directory)
 
     specs = ws.load_experiment_specifications(experiment_directory)
+
+    wandb.login()
+    wandb.init(project='guided-research', config=specs)
 
     # data_source = specs["DataSource"]
     train_split_file = specs["TrainSplit"]
@@ -355,6 +359,13 @@ def main_function(experiment_directory, data_source, continue_from):
             logging.debug("sdf_loss = {:.9f}, reg_loss = {:.9f}, pw_loss = {:.9f}, pp_loss = {:.9f}".format(
                 batch_loss_sdf, batch_loss_reg, batch_loss_pw, batch_loss_pp))
 
+            wandb.log({
+                'sdf_loss': batch_loss_sdf,
+                'reg_loss': batch_loss_reg,
+                'pw_loss': batch_loss_pw,
+                'pp_loss': batch_loss_pp
+            })
+
             epoch_sdf_loss.append(batch_loss_sdf)
             epoch_pw_loss.append(batch_loss_pw)
             epoch_pp_loss.append(batch_loss_pp)
@@ -449,6 +460,9 @@ def main_function(experiment_directory, data_source, continue_from):
                         else:
                             torch.save(c_s.state_dict(), latent_filename + "_cs.pth")
                         torch.save(c_m.state_dict(), latent_filename + "_cm.pth")
+    
+    # Finalize wandb run
+    wandb.finish()
 
 
 if __name__ == "__main__":
