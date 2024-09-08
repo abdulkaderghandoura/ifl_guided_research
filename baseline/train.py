@@ -1,3 +1,6 @@
+import time
+import shutil
+from pathlib import Path
 import numpy as np
 import wandb
 import torch
@@ -16,6 +19,29 @@ import deep_sdf.workspace as ws
 from deep_sdf.lr_schedule import get_learning_rate_schedules
 import deep_sdf.loss as loss
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+
+
+class Timer:
+    """Class for measuring execution time."""
+    def __init__(self):
+        self.start_time = None
+
+    def start(self):
+        """Starts the timer."""
+        self.start_time = time.time()
+
+    def report(self):
+        """Ends the timer and report the elapsed time in seconds.
+
+        Raises:
+            RuntimeError: If the timer has not been started.
+        """
+        if self.start_time is None:
+            raise RuntimeError("Timer has not been started.")
+
+        end_time = time.time()
+        execution_time = end_time - self.start_time
+        print(f"Execution time: {execution_time} seconds")
 
 
 def get_spec_with_default(specs, key, default):
@@ -38,14 +64,19 @@ def append_parameter_magnitudes(param_mag_log, model):
         param_mag_log[name].append(param.data.norm().item())
 
 
-def main_function(experiment_directory, data_source, continue_from):
+def main_function(experiment_directory, data_source, continue_from, experiment_name, wandb_mode):
 
     logging.info("running " + experiment_directory)
 
     specs = ws.load_experiment_specifications(experiment_directory)
 
     wandb.login()
-    wandb.init(project='guided-research', config=specs)
+    wandb.init(
+        mode=wandb_mode,
+        name=experiment_name,
+        project='guided-research', 
+        config=specs
+    )
 
     # data_source = specs["DataSource"]
     train_split_file = specs["TrainSplit"]
@@ -122,7 +153,7 @@ def main_function(experiment_directory, data_source, continue_from):
     save_results = specs["Reconstruct_training"]
     initialize = specs["Initialize"]
     ini_path = specs["IniPath"]
-    initialize_cs = False
+    initialize_cs = True  # Was False initially
 
     do_code_regularization = get_spec_with_default(specs, "CodeRegularization", True)
     code_reg_lambda = get_spec_with_default(specs, "CodeRegularizationLambda", 1e-4)
@@ -470,6 +501,9 @@ if __name__ == "__main__":
     torch.random.manual_seed(31359)
     np.random.seed(31359)
 
+    timer = Timer()
+    timer.start()
+
     import argparse
 
     arg_parser = argparse.ArgumentParser(description="Train the model.")
@@ -497,8 +531,39 @@ if __name__ == "__main__":
         + "from the latest running snapshot, or an integer corresponding to "
         + "an epochal snapshot.",
     )
+    arg_parser.add_argument(
+        "--wandb_mode", 
+        type=str, 
+        default='online',
+        help="Choose between online, offline, and disabled."
+    )
+    arg_parser.add_argument(
+        "--experiment_name", 
+        type=str, 
+        required=True,
+        help="Specify the experiment name.")
+
     deep_sdf.add_common_args(arg_parser)
     args = arg_parser.parse_args()
     deep_sdf.configure_logging(args)
+    
+    experiment_path = Path(args.experiment_directory) / args.experiment_name
+    if not args.continue_from:
+        experiment_path.mkdir()
+        
+        items_to_copy = ['ini', 'specs.json', 'test.json', 'train.json']
+        for item_name in items_to_copy:
+            src_item = experiment_path.parent / item_name
+            dst_item = experiment_path / item_name
 
-    main_function(args.experiment_directory, args.data_source, args.continue_from)
+            # Check if the item exists in the source path
+            if src_item.exists():
+                # Check if the item is a directory or file and copy accordingly
+                if src_item.is_dir():
+                    shutil.copytree(src_item, dst_item)
+                else:
+                    shutil.copy2(src_item, dst_item)
+
+    main_function(str(experiment_path), args.data_source, args.continue_from, args.experiment_name, args.wandb_mode)
+
+    timer.report()
