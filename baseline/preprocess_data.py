@@ -1,7 +1,31 @@
+import time
 import argparse
 import json
 import os
 from mesh_to_sdf.sdf_process import transform_to_canonical
+
+
+class Timer:
+    """Class for measuring execution time."""
+    def __init__(self):
+        self.start_time = None
+
+    def start(self):
+        """Starts the timer."""
+        self.start_time = time.time()
+
+    def report(self):
+        """Ends the timer and report the elapsed time in seconds.
+
+        Raises:
+            RuntimeError: If the timer has not been started.
+        """
+        if self.start_time is None:
+            raise RuntimeError("Timer has not been started.")
+
+        end_time = time.time()
+        execution_time = end_time - self.start_time
+        print(f"Execution time: {execution_time} seconds")
 
 
 def process(data_dir, source_dir, source_name, class_name, test_sampling):
@@ -76,4 +100,9 @@ if __name__ == "__main__":
     with open(args.split_filename, "r") as f:
         split = json.load(f)
 
+    timer = Timer()
+    timer.start()
+
     process(args.data_dir, args.source_dir, args.source_name, args.class_name, args.test_sampling)
+
+    timer.report()
