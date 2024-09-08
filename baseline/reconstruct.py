@@ -12,6 +12,29 @@ import deep_sdf.loss
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 
+class Timer:
+    """Class for measuring execution time."""
+    def __init__(self):
+        self.start_time = None
+
+    def start(self):
+        """Starts the timer."""
+        self.start_time = time.time()
+
+    def report(self):
+        """Ends the timer and report the elapsed time in seconds.
+
+        Raises:
+            RuntimeError: If the timer has not been started.
+        """
+        if self.start_time is None:
+            raise RuntimeError("Timer has not been started.")
+
+        end_time = time.time()
+        execution_time = end_time - self.start_time
+        print(f"Execution time: {execution_time} seconds")
+
+
 def reconstruct(
     decoder,
     num_iterations,
@@ -107,6 +130,8 @@ def reconstruct(
 
 
 if __name__ == "__main__":
+    timer = Timer()
+    timer.start()
 
     arg_parser = argparse.ArgumentParser(
         description="Use a trained decoder to reconstruct a shape given SDF "
@@ -315,3 +340,5 @@ if __name__ == "__main__":
 
         torch.save(c_s.detach().cpu(), os.path.join(reconstruction_codes_dir, os.path.split(npz)[1] + "_cs.pth"))
         torch.save(c_m.detach().cpu(), os.path.join(reconstruction_codes_dir, os.path.split(npz)[1] + "_cm.pth"))
+        
+        timer.report()
