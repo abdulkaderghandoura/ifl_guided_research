@@ -55,7 +55,7 @@ def reconstruct(
 
     for epoch in range(num_iterations):
         sdf_data = dict()
-        phase_list = os.listdir(npz_filename)
+        phase_list = sorted(os.listdir(npz_filename), key=lambda x:int(os.path.splitext(x)[0]))
         samples = []
         ts = []
         for frame in phase_list:
@@ -284,7 +284,7 @@ if __name__ == "__main__":
     adjust_lr_every = int(args.iterations)/2
 
     for ii, npz in enumerate(seqfiles):
-        phase_list = os.listdir(npz)
+        phase_list = sorted(os.listdir(npz), key=lambda x:int(os.path.splitext(x)[0]))
         frame_num = len(phase_list)
         c_s = torch.ones(1, Cs_size).normal_(mean=0, std=0.1).cuda()  # [1, Cs_size]
         c_m = torch.ones(frame_num, Cm_size).normal_(mean=0, std=1.0 / np.sqrt(Cm_size)).cuda()  # [frame_num, Cm_size]
