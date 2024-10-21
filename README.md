@@ -27,18 +27,6 @@ The scripts we implemented are not limited to the `src` directory. We had to cre
 2. To access the [MITEA dataset](https://www.cardiacatlas.org/mitea/), please submit this form on the website.
   - The default destination is `Path/to/repo/data/mitea/raw`
 
-### Set up the Environment
-
-1. Create and activate conda environment 
-```
-conda create --name ifl
-conda activate ifl
-```
-2. Install the requirements 
-```
-pip install -r requiremnets.txt 
-```
-
 ### Data Preprocessing
 1. Baseline data
 ```
