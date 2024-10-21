@@ -46,6 +46,7 @@ def reconstruct(
     N=1000,
     lr=5e-4,
     l2reg=False,
+    observed_phases=None
 ):
 
     sdf_error = 0.0
@@ -56,6 +57,11 @@ def reconstruct(
     for epoch in range(num_iterations):
         sdf_data = dict()
         phase_list = sorted(os.listdir(npz_filename), key=lambda x:int(os.path.splitext(x)[0]))
+
+        if observed_phases is not None:
+            phase_list = [x for x in phase_list if int(os.path.splitext(x)[0]) in observed_phases]
+            assert len(phase_list) == len(observed_phases)
+        
         samples = []
         ts = []
         for frame in phase_list:
@@ -186,6 +192,20 @@ if __name__ == "__main__":
         default=128,
         help="Marching cube resolution.",
     )
+    arg_parser.add_argument(
+        "--subsequence",
+        dest="subsequence",
+        type=str,
+        default=None,
+        help="The sub-sequence of phases to preserve.",
+    )
+    arg_parser.add_argument(
+        "--do_not_transform",
+        dest="do_not_transform",
+        action='store_true',
+        help="Do not transform back the reconstructed shapes.",
+    )
+    arg_parser.set_defaults(do_not_transform=False)
 
     lr = 5e-3
     deep_sdf.add_common_args(arg_parser)
@@ -208,6 +228,7 @@ if __name__ == "__main__":
         return mean, var
 
     specs_filename = os.path.join(args.experiment_directory, "specs.json")
+    subsequence_filename = os.path.join(args.experiment_directory, "subsequence.json")
 
     if not os.path.isfile(specs_filename):
         raise Exception(
@@ -215,10 +236,26 @@ if __name__ == "__main__":
         )
 
     specs = json.load(open(specs_filename))
+    frame_num = specs["FrameNum"]
+    reconstructions_subdir = ws.reconstructions_subdir
+    
+    if args.subsequence is not None:
+        subsequence = json.load(open(subsequence_filename))
+        observed_phases = list(map(int, sorted(subsequence["preserve"], key=lambda x:int(x))))
+        
+        assert all(0 <= x < specs["FrameNum"] for x in observed_phases), \
+            "Preserved phases must be between 0 and FrameNum - 1"
+        assert len(observed_phases) == len(set(observed_phases)), \
+            "Preserved phases must be unique"
+        
+        frame_num = len(observed_phases)
+        reconstructions_subdir = "SubSeqReconstructions"
+
+    elif args.do_not_transform:
+        reconstructions_subdir = "UntransformedReconstructions"
 
     arch = __import__("networks." + specs["NetworkArch"], fromlist=["Decoder"])
 
-    frame_num = specs["FrameNum"]
     ini_path = specs["IniPath"]
     Cs_size = specs["CsLength"]
     Cm_size = specs["CmLength"]
@@ -246,7 +283,7 @@ if __name__ == "__main__":
     save_latvec_only = False
 
     reconstruction_dir = os.path.join(
-        args.experiment_directory, ws.reconstructions_subdir, str(saved_model_epoch)
+        args.experiment_directory, reconstructions_subdir, str(saved_model_epoch)
     )
 
     if not os.path.isdir(reconstruction_dir):
@@ -284,8 +321,12 @@ if __name__ == "__main__":
     adjust_lr_every = int(args.iterations)/2
 
     for ii, npz in enumerate(seqfiles):
-        phase_list = sorted(os.listdir(npz), key=lambda x:int(os.path.splitext(x)[0]))
-        frame_num = len(phase_list)
+        phase_list = sorted(os.listdir(npz), key=lambda x:int(os.path.splitext(x)[0]))  # ['00.npz', ..]
+        
+        if args.subsequence is not None:
+            phase_list = [x for x in phase_list if int(os.path.splitext(x)[0]) in observed_phases]
+            assert len(phase_list) == len(observed_phases)
+        
         c_s = torch.ones(1, Cs_size).normal_(mean=0, std=0.1).cuda()  # [1, Cs_size]
         c_m = torch.ones(frame_num, Cm_size).normal_(mean=0, std=1.0 / np.sqrt(Cm_size)).cuda()  # [frame_num, Cm_size]
 
@@ -305,7 +346,8 @@ if __name__ == "__main__":
             0.1,
             N=N,
             lr=lr,
-            l2reg=True
+            l2reg=True,
+            observed_phases=observed_phases if args.subsequence is not None else None
         )
         logging.info("reconstruct time: {}".format(time.time() - start))
         logging.info("reconstruction error: {}".format(err))
@@ -329,13 +371,17 @@ if __name__ == "__main__":
 
             c_s_vec = c_s  # [1, Cs_size]
             c_m_vecs = c_m[phase_idx, :].unsqueeze(0)  # [1, Cm_size]
-            phase = torch.FloatTensor([phase_idx/(frame_num-1)]).unsqueeze(0)
+            phase = torch.FloatTensor([int(os.path.splitext(phase_list[phase_idx])[0])/(specs["FrameNum"]-1)]).unsqueeze(0)
+            print("Phase: ", phase_list[phase_idx], phase)
             if not save_latvec_only:
                 start = time.time()
                 with torch.no_grad():
+                    kwargs = {"offset": offset, "scale": scale, "Ti": Ti}
+                    if args.do_not_transform:
+                        kwargs = {}
                     deep_sdf.mesh.create_mesh_4dsdf(
                         decoder, c_s_vec, c_m_vecs, phase, mesh_filename, motion_filename,
-                        N=args.resolution, max_batch=max_batch, offset=offset, scale=scale, Ti=Ti)
+                        N=args.resolution, max_batch=max_batch, **kwargs)
                 logging.debug("total time: {}".format(time.time() - start))
 
         torch.save(c_s.detach().cpu(), os.path.join(reconstruction_codes_dir, os.path.split(npz)[1] + "_cs.pth"))
