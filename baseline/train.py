@@ -272,9 +272,7 @@ def main_function(experiment_directory, data_source, continue_from, experiment_n
 
     start_epoch = 1
     if continue_from is not None:
-        if not os.path.exists(os.path.join(experiment_directory, ws.latent_codes_subdir, continue_from + ".pth")) or \
-                not os.path.exists(os.path.join(experiment_directory, ws.model_params_subdir, continue_from + ".pth")) or \
-                not os.path.exists(os.path.join(experiment_directory, ws.optimizer_params_subdir, continue_from + ".pth")):
+        if not os.path.exists(os.path.join(experiment_directory, ws.model_params_subdir, continue_from + ".pth")):
             logging.warning('"{}" does not exist! Ignoring this argument...'.format(continue_from))
         else:
             logging.info('continuing from "{}"'.format(continue_from))
@@ -455,7 +453,7 @@ def main_function(experiment_directory, data_source, continue_from, experiment_n
 
                 seqfiles = deep_sdf.dataset.get_instance_filenames(args.data_source, train_split)
                 for ii, npz in enumerate(tqdm.tqdm(seqfiles)):
-                    phase_list = os.listdir(npz)
+                    phase_list = sorted(os.listdir(npz))
                     for phase_idx in range(len(phase_list)):
                         full_filename = os.path.join(npz, phase_list[phase_idx])
                         file_name = os.path.split(npz)[1] + "_" + os.path.splitext(phase_list[phase_idx])[0]
@@ -551,7 +549,7 @@ if __name__ == "__main__":
     if not args.continue_from:
         experiment_path.mkdir()
         
-        items_to_copy = ['ini', 'specs.json', 'test.json', 'train.json']
+        items_to_copy = ['ini', 'specs.json', 'test.json', 'train.json', "subsequence.json"]
         for item_name in items_to_copy:
             src_item = experiment_path.parent / item_name
             dst_item = experiment_path / item_name
