@@ -112,7 +112,7 @@ class SDFSamples(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         data = dict()
-        frame_list = os.listdir(self.seqfiles[idx])
+        frame_list = sorted(os.listdir(self.seqfiles[idx]))
         samples = []
         ts = []
         for frame in frame_list:
@@ -150,7 +150,7 @@ class SDFSamples_ED(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         data = dict()
-        frame_list = os.listdir(self.seqfiles[idx])
+        frame_list = sorted(os.listdir(self.seqfiles[idx]))
         samples = []
         ts = []
         for frame in frame_list:
@@ -169,7 +169,7 @@ class SDFSamples_ED(torch.utils.data.Dataset):
 if __name__ == '__main__':
     ### get .json
     data_dir = r"\\SEUVCL-DATA-03\Data03Training\0518_4dsdf_yxh\data_acdc\LVV\Processed\test"
-    instance_list = os.listdir(data_dir)
+    instance_list = sorted(os.listdir(data_dir))
     for instance in instance_list:
         print('     "{}",'.format(os.path.splitext(instance)[0]))
 
