@@ -1,10 +1,10 @@
 {
   "Description" : [ "4D myocardium reconstruction" ],
   "DataSource" : "data/mitea/processed/LVV/train",
-  "TrainSplit" : "baseline/experiments/mitea_ini_1/train.json",
-  "TestSplit" : "baseline/experiments/mitea_ini_1/test.json",
+  "TrainSplit" : "baseline/experiments/<experiment_name>/train.json",
+  "TestSplit" : "baseline/experiments/<experiment_name>/test.json",
   "NetworkArch" : "decoder",
-  "IniPath": "baseline/experiments/mitea_ini_1/ini",
+  "IniPath": "baseline/experiments/<experiment_name>/ini",
   "Initialize": true,
   "Reconstruct_training": false,
   "NetworkSpecs" : {
@@ -30,9 +30,9 @@
   "CsLength" : 256,
   "CmLength" : 256,
   "FrameNum": 2,
-  "NumEpochs" : 2048,
-  "SnapshotFrequency" : 1000,
-  "AdditionalSnapshots" : [ 100, 500 ],
+  "NumEpochs" : 2500,
+  "SnapshotFrequency" : 500,
+  "AdditionalSnapshots" : [ 100 ],
   "LearningRateSchedule" : [
     {
       "Type" : "Step",
