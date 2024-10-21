@@ -5,10 +5,10 @@ import numpy as np
 
 def ply_to_obj(source_file_path, target_file_path):
     # Load the PLY file
-    pcd = trimesh.load(str(source_file_path), file_type='ply')
+    mesh = trimesh.load(str(source_file_path), file_type='ply')
 
     # Write to OBJ file
-    pcd.export(str(target_file_path), file_type='obj')
+    mesh.export(str(target_file_path), file_type='obj')
 
 
 def apply_transform_mat(source_file_path, target_file_path, mat_file_path):
@@ -26,25 +26,19 @@ def apply_transform_mat(source_file_path, target_file_path, mat_file_path):
     transformed_vertices = transformed_vertices[:, :3]
 
     mesh.vertices = transformed_vertices
-    mesh.export(target_file_path)  # TODO: Test also for point cloud
-
-    # # Write the transformed vertices to a new .obj file manually
-    # with open(target_file_path, 'w') as file:
-    #     for vertex in transformed_vertices:
-    #         file.write(f"v {vertex[0]} {vertex[1]} {vertex[2]}\n")
+    mesh.export(target_file_path)
 
 
 if __name__ == "__main__":
     repo_dir_path = Path(__file__).resolve().parent.parent.parent
     gen_mitea_dir_path = repo_dir_path / "data" / "mitea" / "generated"
 
-    # source_file_path = "path/to/source/file"
-    # target_file_path = "path/to/target/file" 
+    # source_file_path = repo_dir_path / "notebooks" / "020_00.ply"
+    # target_file_path = repo_dir_path / "notebooks" / "020_00.obj"
     # ply_to_obj(source_file_path, target_file_path)
 
-    seq_id = "005"
-    phase_id = "00"
-    source_file_path = gen_mitea_dir_path / "scan1" / seq_id / "points" / f"{phase_id}.obj"
-    target_file_path = repo_dir_path / "notebooks" / f"mitea_{seq_id}_{phase_id}_transformed.obj"
-    mat_file_path = gen_mitea_dir_path / "scan1" / seq_id / "P.txt"
+    source_file_path = repo_dir_path / "path/to/source.obj"
+    target_file_path = repo_dir_path / "path/to/target.obj"
+    mat_file_path = repo_dir_path / "path/to/transformation.txt"
+
     apply_transform_mat(source_file_path, target_file_path, mat_file_path)
